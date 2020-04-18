@@ -3,7 +3,7 @@ const MongoClient = require('mongodb').MongoClient;
 const cors = require('cors')
 
 // Mongo Stuff
-const uri = ''
+const uri = ""
 
 // Express Stuff
 const app = express()
