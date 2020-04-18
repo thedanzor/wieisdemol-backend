@@ -12,46 +12,57 @@ app.use(cors()) // For cors policies
 app.use(express.json()) // for parsing application/json
 app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
 
-const port = 3030
+const port = process.env.PORT  || 3030
+
+app.get('/', function (req, res) {
+  res.send(JSON.stringify({ Hello: 'World'}));
+});
 
 // Get information from the database on how far we are
 app.get('/status', function (routeRequest, routeResponse) {
-  const client = new MongoClient(uri, { useNewUrlParser: true });
-  client.connect(async err => {
-    const database = client.db("wieisdemol")
+  try {
+    const client = new MongoClient(uri, { useNewUrlParser: true });
+    client.connect(async err => {
+      if (err) {
+        routeResponse.send(err)
+      }
+      const database = client.db("wieisdemol")
 
-    const general = database.collection("general");
-    const bets = database.collection("bets");
-    const players = database.collection("players");
+      const general = database.collection("general");
+      const bets = database.collection("bets");
+      const players = database.collection("players");
 
-    players.find().toArray((err, players) => {
-      const filteredPlayers = []
-      players.forEach(player => {
-        filteredPlayers.push({
-          name: player.name,
-          points: player.points,
-          mostSuspected: player.mostSuspected
+      players.find().toArray((err, players) => {
+        const filteredPlayers = []
+        players.forEach(player => {
+          filteredPlayers.push({
+            name: player.name,
+            points: player.points,
+            mostSuspected: player.mostSuspected
+          })
+        })
+
+        bets.find().toArray((err, bets) => {
+          const currentBets = bets
+
+          general.find().toArray((err, data) => {
+            const generalData = data
+
+            const response = {
+              bets: currentBets,
+              general: generalData,
+              players: filteredPlayers
+            }
+        
+            routeResponse.send(response)
+            client.close();
+          })
         })
       })
-
-      bets.find().toArray((err, bets) => {
-        const currentBets = bets
-
-        general.find().toArray((err, data) => {
-          const generalData = data
-
-          const response = {
-            bets: currentBets,
-            general: generalData,
-            players: filteredPlayers
-          }
-      
-          routeResponse.send(response)
-          client.close();
-        })
-      })
-    })
-  });
+    });
+  } catch (err) {
+    routeResponse.send(err)
+  }
 })
 
 // Get information from the database on how far we are
